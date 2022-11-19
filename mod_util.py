@@ -303,8 +303,6 @@ def exibe_e_retorna_imagens_para_predizer():
     img = img.flatten()
     return np.asarray([img])
 
-# Load extra dataset for test
-
 
 def convert_image_to_array(image_file):
     img = cv2.imread(image_file, cv2.IMREAD_GRAYSCALE)
