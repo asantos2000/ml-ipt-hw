@@ -2,9 +2,9 @@
 
 ## Executando no kaggle
 
-1. Acesse URL
+1. Acesse URL: https://www.kaggle.com/code/adsantos/ml-fashion-mnist-classification-experiment
 2. Faça uma cópia do notebook
-3. Ajuste a aceleração para P100
+3. Ajuste a aceleração para GPU P100
 4. Execute todas as células
 
 ## Executando local
