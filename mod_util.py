@@ -9,18 +9,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import joblib
 import cv2
-from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.utils import plot_model
+from tensorflow.keras.utils import to_categorical, plot_model
 from tensorflow.keras.preprocessing.image import img_to_array, array_to_img
-from tensorflow.keras.layers import Dense, Dropout, Flatten
+from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D
 from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.applications.resnet_v2 import ResNet152V2
 from tensorflow.keras.applications.densenet import DenseNet169
 from tensorflow.keras import Model
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.optimizers import SGD
 from sklearn.preprocessing import StandardScaler, Normalizer
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
+from sklearn.model_selection import GridSearchCV, KFold
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report, plot_confusion_matrix
 from sklearn.linear_model import SGDClassifier
 from sklearn.datasets import load_files
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -34,13 +35,15 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from keras.datasets import fashion_mnist
 import pickle
 
-
 pp = pprint.PrettyPrinter(indent=4)
 
+# Constantes
 DB_DIR = "db"
 CLASS_NAMES = ['Camiseta', 'Calça', 'Pulôver', 'Vestido', 'Casaco',
                'Sandália', 'Camisa', 'Tênis', 'Bolsa', 'Bota']
 AMOSTRAS_GRID = 36
+EPOCHS = 30
+BATCH_SIZE = 700
 
 # specify Classes / Labels
 #class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
@@ -307,6 +310,7 @@ def exibe_e_retorna_imagens_para_predizer():
 def convert_image_to_array(image_file):
     img = cv2.imread(image_file, cv2.IMREAD_GRAYSCALE)
     img = cv2.resize(img, (28, 28), interpolation=cv2.INTER_LINEAR)
+    img = cv2.bitwise_not(img)
     img = img.flatten()
     return np.asarray([img])
 
@@ -706,3 +710,107 @@ def add_model_metrics(cr, train_duration, predict_duration, model_name, idx):
     )
     df = pd.DataFrame(metrics, index=[idx])
     return df
+
+
+def prepare_pixels(train, test):
+    '''
+    Efetua a normalização dos pixels para um intervalo entre 0 e 1
+    convertendo os inteiros para float, depois dividindo o valor do
+    pixel por 255, que é o valor máximo que pode ser designado para
+    um determinado pixel.
+    '''
+    # converting values to float
+    train_norm = train.astype('float32')
+    test_norm = test.astype('float32')
+    # normalizing to a range between 0 and 1
+    train_norm = train_norm / 255.0
+    test_norm = test_norm / 255.0
+    return train_norm, test_norm
+
+
+def run_test_harness(trainX, trainy, testX, testy):
+    scores, histories = evaluate_model_convnet(trainX, trainy)
+    summarize_diagnostics(histories)
+    summarize_performance(scores)
+
+
+def evaluate_model_convnet(dataX, datay, n_folds=5):
+    '''
+    Divide o dataset usando K-Fold igual 5;
+    Faz o fit do modelo e avalia o desempenho
+    '''
+    scores, histories = [], []
+    kfold = KFold(n_splits=n_folds, shuffle=True, random_state=42)
+    for train_idx, test_idx in kfold.split(dataX):
+        model = define_model_convnet()
+        trainX, trainy, testX, testy = dataX[train_idx], datay[train_idx], dataX[test_idx], datay[test_idx]
+        history = model.fit(x=trainX,
+                            y=trainy,
+                            epochs=EPOCHS,
+                            batch_size=BATCH_SIZE,
+                            validation_data=(testX, testy),
+                            verbose=0
+                           )
+        _, acc = model.evaluate(testX, testy, verbose=0)
+        print(f'Accuracy: {(acc * 100.0):.2f} %')
+        scores.append(acc)
+        histories.append(history)
+    return scores, histories
+
+
+def define_model_convnet():
+    '''
+    Define a arquitetura da CNN
+    '''
+    model = Sequential()
+    model.add(Conv2D(filters=28,
+                     kernel_size=(3, 3),
+                     activation='relu',
+                     kernel_initializer='he_uniform',
+                     input_shape=(28, 28, 1)
+                    ))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Flatten())
+    model.add(Dense(100, activation='relu', kernel_initializer='he_uniform'))
+    model.add(Dense(10, activation='softmax'))
+    # compiling the model
+    optimizer = SGD(learning_rate=0.01, momentum=0.9)
+    model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+
+
+def load_dataset_convnet():
+    '''
+    Carrega os dados de treinamento e testes;
+    Altera a forma para 28x28x1 já que há somente uma escala de cor (cinza);
+    Aplica one hot enconding nos rótulos.
+    '''
+    # loading the dataset
+    (trainX, trainy), (testX, testy) = fashion_mnist.load_data()
+    # reshaping the dataset to a single channel
+    trainX = trainX.reshape((trainX.shape[0], 28, 28, 1))
+    testX = testX.reshape((testX.shape[0], 28, 28, 1))
+    # transforming labels using one hot enconding
+    testy_no_cat = testy
+    trainy = to_categorical(trainy)
+    testy = to_categorical(testy)
+    return trainX, trainy, testX, testy, testy_no_cat
+
+
+def run_fit_model(trainX, trainy, testX, testy):
+    model = define_model_convnet()
+    model.fit(trainX, trainy, epochs=EPOCHS, batch_size=BATCH_SIZE, verbose=1)
+    #model.save('modelo_final.h5')
+    return model
+
+
+def show_confusion_matrix_convnet(testX, testy, model):
+    y_tmp_preds = model.predict(testX)
+    y_preds = y_tmp_preds.argmax(axis=1)
+    testy = testy.argmax(axis=1)
+    cm = confusion_matrix(testy, y_preds)
+    cmd = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=CLASS_NAMES)
+    fig, ax = plt.subplots(figsize=(10, 10 ))
+    cmd.plot(ax=ax)
+    
+    return y_tmp_preds

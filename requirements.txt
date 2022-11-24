@@ -8,3 +8,4 @@ scikit-learn >= 1.0.2
 tensorflow >= 2.10.0
 wandb
 pydot # in addition, need to install graphviz
+scikit-image
