@@ -48,6 +48,8 @@ pip install -r requirements.txt -r requirements-local.txt
 Executando em linux, mac os ou windows-linux wsl2:
 
 ```bash
+# Provide the key or check the prompt on notebook
+export WANDB_API_KEY=key
 jupyter-lab
 ```
 

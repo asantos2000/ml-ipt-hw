@@ -247,6 +247,35 @@ def treina_com_hog_otimizado(x, y):
     return grid_search.fit(x, y)
 
 
+def treina_com_hog_otimizado_gauss(x, y):
+    param_grid = [
+        {
+            'hogify__orientations': [8, 9],
+            'hogify__cells_per_block': [(2, 2), (3, 3)],
+            'hogify__pixels_per_cell': [(8, 8), (10, 10), (12, 12)]
+        },
+        {
+            'hogify__orientations': [8],
+            'hogify__cells_per_block': [(3, 3)],
+            'hogify__pixels_per_cell': [(8, 8)],
+            'classify': [
+                #define_model(),
+                svm.SVC(kernel='rbf')
+            ]
+        }
+    ]
+    HOG_pipeline = monta_pipeline_hog()
+    grid_search = GridSearchCV(HOG_pipeline,
+                               param_grid,
+                               cv=3,
+                               n_jobs=-1,
+                               scoring='accuracy',
+                               verbose=1,
+                               return_train_score=True)
+
+    return grid_search.fit(x, y)
+
+
 def exibe_percentual_de_acerto(predicoes, y_test):
     print('Percentual de acerto: ', 100 *
           np.sum(predicoes == y_test) / len(y_test))
