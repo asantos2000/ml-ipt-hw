@@ -17,10 +17,13 @@
 
 ### 0. Pré-requisitos
 
-1. Conda instalado
-2. Jupyter notebook
-3. Hardware mínimo
-- Os requisitos de hardware para alguns modelos são no mínimo:
+1. Conda instalado 4+
+2. Python: 3.7+
+3. Jupyter lab: 3+
+4. Hardware recomendado:
+   - GPU Nvidia P100 16 GB, CPU Intel Xeon CPU 2.00 GHz CPU, RAM 16 GB
+
+> O modelo SVN utiliza apenas CPU.
 
 ### 1. Criar o ambiente
 
