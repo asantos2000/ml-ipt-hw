@@ -54,3 +54,10 @@ jupyter-lab
 ```
 
 > Caso queira coletar métricas de execução, configure uma variável de ambiente com a chave obtida no site [wandb.ai](https://docs.wandb.ai/quickstart).
+
+
+## Conjunto de dados
+
+Este notebook utiliza o conjunto de dados do mnist fornecido pela biblioteca `keras.datasets.fashion_mnist`.
+
+Um segundo conjunto de dados, utilizado para testes de campo está em `input/test_images`.
