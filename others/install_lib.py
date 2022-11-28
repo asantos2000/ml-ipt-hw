@@ -105,7 +105,7 @@ if __name__ == '__main__':
         filename='requirements.txt', interactive_mode=True)
     
     # Installing using requirements.txt
-    #pinst.install()
+    pinst.install()
 
     # Install from a list
     pinst.install(['pandas', 'plotly>=5.11.0'])
